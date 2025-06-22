@@ -32,7 +32,7 @@ Icon
 ._*
 
 # macOS network shares
-.AppleSharePDS__pycache__/
+.AppleSharePDS
 
 #virtual environments folder
 .venv
