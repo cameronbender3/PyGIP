@@ -1,1 +1,1 @@
-from .backbones import GCN, GraphSAGE, ShadowNet, AttackNet
+from .backbones import GCN, GraphSAGE, ShadowNet, AttackNet, GCN_PyG, GAT

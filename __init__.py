@@ -1,16 +1,17 @@
 from .models.attack import BaseAttack
-from .models.attack.adversarial import AdversarialModelExtraction
+# from .models.attack.adversarial import AdversarialModelExtraction
 from .models.attack.mea import (
     ModelExtractionAttack0,
-    ModelExtractionAttack1,
-    ModelExtractionAttack2,
-    ModelExtractionAttack3,
-    ModelExtractionAttack4,
-    ModelExtractionAttack5
+    # ModelExtractionAttack1,
+    # ModelExtractionAttack2,
+    # ModelExtractionAttack3,
+    # ModelExtractionAttack4,
+    # ModelExtractionAttack5
 )
 from .models.defense import BaseDefense
 from .models.defense.WatermarkDefense import WatermarkByRandomGraph
-from .models.nn import GCN, GraphSAGE, ShadowNet, AttackNet
+from .models.nn import GCN, GraphSAGE, ShadowNet, AttackNet, GCN_PyG, GAT
+from .models.defense.OwnerWatermarkingDefense import OwnerWatermarkingDefense
 from .utils.metrics import GraphNeuralNetworkMetric
 
 __version__ = "0.1.0"
@@ -22,15 +23,16 @@ __all__ = [
 
     # Attack implementations
     'ModelExtractionAttack0',
-    'ModelExtractionAttack1',
-    'ModelExtractionAttack2',
-    'ModelExtractionAttack3',
-    'ModelExtractionAttack4',
-    'ModelExtractionAttack5',
-    'AdversarialModelExtraction',
+    # 'ModelExtractionAttack1',
+    # 'ModelExtractionAttack2',
+    # 'ModelExtractionAttack3',
+    # 'ModelExtractionAttack4',
+    # 'ModelExtractionAttack5',
+    # 'AdversarialModelExtraction',
 
     # Defense implementations
     'Watermark_sage',
+    'OwnerWatermarkingDefense',
 
     # Utility classes
     'GraphNeuralNetworkMetric',
@@ -38,4 +40,6 @@ __all__ = [
     'GraphSAGE',
     'ShadowNet',
     'AttackNet'
+    'GCN_PyG',
+    'GAT',
 ]
