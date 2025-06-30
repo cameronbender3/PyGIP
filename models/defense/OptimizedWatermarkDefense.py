@@ -170,8 +170,7 @@ def train_clean_model(training_data: List[Data], epochs: int = 200, batch_size: 
             preds = out.argmax(dim=1)
             correct += (preds == batch.y.view(-1)).sum().item()
             total += batch.num_graphs
-        if epoch % 20 == 0:
-            print(f"Clean Model Epoch {epoch}: Loss={total_loss/total:.4f} Acc={correct/total:.3f}")
+
         if epoch > 50 and epoch % 20 == 0:
             for pg in optimizer.param_groups:
                 pg['lr'] *= 0.8
@@ -275,7 +274,6 @@ def train_watermarked_model_full(
                         wm_corr += 1
             clean_acc = c_corr / 20
             wm_acc = wm_corr / min(10, len(key_inputs))
-            print(f"WM Model Ep{epoch}: Clean_loss={avg_clean_loss:.4f}, WM_loss={avg_wm_loss:.4f}, SNNL_loss={avg_wm_snnl:.4f}, Clean_acc={clean_acc:.3f}, WM_acc={wm_acc:.3f}")
             model.train()
     return model
 
