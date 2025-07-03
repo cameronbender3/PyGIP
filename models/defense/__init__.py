@@ -2,8 +2,8 @@ from .base import BaseDefense
 from .OptimizedWatermarkDefense import OptimizedWatermarkDefense
 from .WatermarkDefense import (
     WatermarkByRandomGraph,
-    BaseDefense
 )
+from .OwnerWatermarkingDefense import OwnerWatermarkingDefense
 
 
 __all__ = [
