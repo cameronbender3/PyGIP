@@ -1,21 +1,24 @@
-import os
 import random
+from typing import List, Tuple
+
+import networkx as nx
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import networkx as nx
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import SAGEConv, global_mean_pool, BatchNorm
 from torch_geometric.utils import to_networkx
-from typing import List, Tuple
+
 from models.defense.base import BaseDefense
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+
 class SAGEModel(nn.Module):
-    def __init__(self, input_dim: int, hidden_dim: int = 64, num_classes: int = 10, num_layers: int = 3, dropout: float = 0.1):
+    def __init__(self, input_dim: int, hidden_dim: int = 64, num_classes: int = 10, num_layers: int = 3,
+                 dropout: float = 0.1):
         super().__init__()
         self.convs = nn.ModuleList()
         self.norms = nn.ModuleList()
@@ -38,6 +41,7 @@ class SAGEModel(nn.Module):
         if return_embedding:
             return embedding
         return self.classifier(embedding)
+
 
 class WatermarkGenerator:
     def __init__(self, training_dataset: List[Data], num_watermark_samples: int = None):
@@ -110,8 +114,8 @@ class WatermarkGenerator:
             watermark_label = random.choice(other_classes) if other_classes else (clean_pred + 1) % self.num_classes
             watermark_pairs.append((watermark_graph, watermark_label))
         while len(watermark_pairs) < max(5, self.num_watermark_samples // 2):
-            wg = self.algorithm_1_key_input_topology_generation(random.choice([2,3,4]))
-            watermark_pairs.append((wg, random.randint(0, self.num_classes-1)))
+            wg = self.algorithm_1_key_input_topology_generation(random.choice([2, 3, 4]))
+            watermark_pairs.append((wg, random.randint(0, self.num_classes - 1)))
         return watermark_pairs
 
     def _get_num_classes(self) -> int:
@@ -126,10 +130,12 @@ class WatermarkGenerator:
         total = sum(d.x.size(0) for d in self.training_dataset)
         return total // len(self.training_dataset)
 
+
 class SNNLLoss(nn.Module):
     def __init__(self, temperature: float = 1.0):
         super().__init__()
         self.T = temperature
+
     def forward(self, embeddings: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         N = embeddings.size(0)
         if N <= 1:
@@ -148,9 +154,12 @@ class SNNLLoss(nn.Module):
             count += 1
         return loss / max(count, 1) if count > 0 else torch.tensor(0.0, requires_grad=True, device=embeddings.device)
 
-def train_clean_model(training_data: List[Data], epochs: int = 200, batch_size: int = 32, num_layers: int = 3) -> SAGEModel:
+
+def train_clean_model(training_data: List[Data], epochs: int = 200, batch_size: int = 32,
+                      num_layers: int = 3) -> SAGEModel:
     num_classes = max([int(d.y) for d in training_data]) + 1
-    model = SAGEModel(input_dim=training_data[0].x.size(1), hidden_dim=160, num_classes=num_classes, num_layers=num_layers)
+    model = SAGEModel(input_dim=training_data[0].x.size(1), hidden_dim=160, num_classes=num_classes,
+                      num_layers=num_layers)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     criterion = nn.CrossEntropyLoss()
     loader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
@@ -176,16 +185,17 @@ def train_clean_model(training_data: List[Data], epochs: int = 200, batch_size: 
                 pg['lr'] *= 0.8
     return model
 
+
 def train_watermarked_model_full(
-    training_data: List[Data],
-    key_inputs: List[Tuple[Data, int]],
-    epochs: int = 300,
-    alpha: float = 0.1,
-    num_layers: int = 4,
-    hidden_dim: int = 160,
-    dropout: float = 0.05,
-    lr: float = 1e-3,
-    snnl_temperature: float = 1.0,
+        training_data: List[Data],
+        key_inputs: List[Tuple[Data, int]],
+        epochs: int = 300,
+        alpha: float = 0.1,
+        num_layers: int = 4,
+        hidden_dim: int = 160,
+        dropout: float = 0.05,
+        lr: float = 1e-3,
+        snnl_temperature: float = 1.0,
 ):
     num_classes = max([int(d.y) for d in training_data] + [label for _, label in key_inputs]) + 1
     model = SAGEModel(
@@ -277,6 +287,7 @@ def train_watermarked_model_full(
             model.train()
     return model
 
+
 def evaluate_watermark_effectiveness(model: SAGEModel, key_inputs: List[Tuple[Data, int]]) -> float:
     model.eval()
     correct = 0
@@ -287,6 +298,7 @@ def evaluate_watermark_effectiveness(model: SAGEModel, key_inputs: List[Tuple[Da
             if pred == expected_label:
                 correct += 1
     return correct / len(key_inputs) if key_inputs else 0.0
+
 
 def evaluate_clean_accuracy(model: SAGEModel, test_data: List[Data], batch_size=32) -> float:
     if not test_data:
@@ -302,6 +314,7 @@ def evaluate_clean_accuracy(model: SAGEModel, test_data: List[Data], batch_size=
             correct += (preds == batch.y.view(-1)).sum().item()
             total += batch.num_graphs
     return correct / total if total > 0 else 0.0
+
 
 class KeyInputOptimizer:
     def __init__(self, training_dataset: List[Data], key_inputs: List[Tuple[Data, int]], T_opt: int = 20):
@@ -322,6 +335,7 @@ class KeyInputOptimizer:
                     nn.Linear(N_t * N_t, N_t * N_t),
                     nn.Sigmoid()
                 )
+
             def forward(self, A):
                 x = A.flatten().unsqueeze(0)
                 out = self.net(x).reshape(self.N_t, self.N_t)
@@ -337,6 +351,7 @@ class KeyInputOptimizer:
                     nn.ReLU(),
                     nn.Linear(N_t * feat_dim, N_t * feat_dim)
                 )
+
             def forward(self, F):
                 x = F.flatten().unsqueeze(0)
                 out = self.net(x).reshape(self.N_t, self.feat_dim)
@@ -415,17 +430,18 @@ class KeyInputOptimizer:
             optimized_pairs.append((data_opt, label))
         return optimized_pairs
 
+
 class OptimizedWatermarkDefense(BaseDefense):
     def __init__(
-        self,
-        dataset,
-        attack_node_fraction,
-        model_path=None,
-        alpha=0.1,
-        num_layers=4,
-        clean_epochs=200,
-        wm_epochs=200,
-        **kwargs
+            self,
+            dataset,
+            attack_node_fraction,
+            model_path=None,
+            alpha=0.1,
+            num_layers=4,
+            clean_epochs=200,
+            wm_epochs=200,
+            **kwargs
     ):
         super().__init__(dataset, attack_node_fraction)
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -439,7 +455,8 @@ class OptimizedWatermarkDefense(BaseDefense):
         self.test_data = getattr(dataset, 'test_data', None)
 
         if not (isinstance(self.train_data, list) and isinstance(self.test_data, list)):
-            raise ValueError("This defense only supports graph classification datasets (e.g., ENZYMES). Node-level datasets are not supported.")
+            raise ValueError(
+                "This defense only supports graph classification datasets (e.g., ENZYMES). Node-level datasets are not supported.")
 
         self.model_path = model_path
 
@@ -455,25 +472,26 @@ class OptimizedWatermarkDefense(BaseDefense):
         dict
             Dictionary containing performance metrics
         """
-        print("="*60)
+        print("=" * 60)
         print("Step 1: Train clean (victim) model")
-        print("-"*60)
+        print("-" * 60)
         target_model = self._train_target_model()
         baseline_acc = evaluate_clean_accuracy(target_model, self.test_data)
         print(f"Test accuracy on clean (victim) model: {baseline_acc:.4f}")
 
         print("\nStep 2: Generate and optimize watermark key inputs")
-        print("-"*60)
+        print("-" * 60)
         wm_gen = getattr(self, 'wm_gen', None)
         if wm_gen is None:
-            self.wm_gen = WatermarkGenerator(self.train_data, num_watermark_samples=int(len(self.train_data)*self.alpha))
+            self.wm_gen = WatermarkGenerator(self.train_data,
+                                             num_watermark_samples=int(len(self.train_data) * self.alpha))
         key_pairs = self.wm_gen.generate_watermark_set_with_clean_model(target_model)
         optimizer = KeyInputOptimizer(self.train_data, key_pairs, T_opt=20)
         key_pairs_optimized = optimizer.optimize()
         print(f"Generated and optimized {len(key_pairs_optimized)} watermark key inputs")
 
         print("\nStep 3: Train defense (watermarked) model")
-        print("-"*60)
+        print("-" * 60)
         defense_model = train_watermarked_model_full(
             self.train_data, key_pairs_optimized,
             epochs=self.wm_epochs, alpha=self.alpha, num_layers=self.num_layers
@@ -482,21 +500,21 @@ class OptimizedWatermarkDefense(BaseDefense):
         print(f"Test accuracy on defense (watermarked) model: {defense_acc:.4f}")
 
         print("\nStep 4: Evaluate watermark effectiveness")
-        print("-"*60)
+        print("-" * 60)
         watermark_success = evaluate_watermark_effectiveness(defense_model, key_pairs_optimized)
         print(f"Watermark detection rate (defense model): {watermark_success:.4f}")
 
         acc_degradation = baseline_acc - defense_acc
 
         print("\nPerformance metrics:")
-        print("-"*60)
+        print("-" * 60)
         print(f"{'Metric':<36} {'Value'}")
-        print("-"*60)
+        print("-" * 60)
         print(f"{'Test acc. (clean model)':<36} {baseline_acc:.4f}")
         print(f"{'Test acc. (defense/watermarked)':<36} {defense_acc:.4f}")
         print(f"{'Accuracy degradation':<36} {acc_degradation:.4f}")
         print(f"{'Watermark detection (defense)':<36} {watermark_success:.4f}")
-        print("-"*60)
+        print("-" * 60)
 
         results = {
             "baseline_accuracy": baseline_acc,
@@ -506,7 +524,6 @@ class OptimizedWatermarkDefense(BaseDefense):
         }
         return results
 
-
     def _load_model(self):
         if not self.model_path:
             raise ValueError("No model_path provided.")
@@ -515,13 +532,14 @@ class OptimizedWatermarkDefense(BaseDefense):
         print("[OptimizedWatermarkDefense] Training clean (victim) model...")
         model = train_clean_model(self.train_data, epochs=self.clean_epochs, num_layers=self.num_layers)
         self.net1 = model
-        self.wm_gen = WatermarkGenerator(self.train_data, num_watermark_samples=int(len(self.train_data)*self.alpha))
+        self.wm_gen = WatermarkGenerator(self.train_data, num_watermark_samples=int(len(self.train_data) * self.alpha))
         return model
 
     def _train_defense_model(self, clean_model=None):
         print("[OptimizedWatermarkDefense] Generating and optimizing watermark key inputs...")
         if not hasattr(self, 'wm_gen'):
-            self.wm_gen = WatermarkGenerator(self.train_data, num_watermark_samples=int(len(self.train_data)*self.alpha))
+            self.wm_gen = WatermarkGenerator(self.train_data,
+                                             num_watermark_samples=int(len(self.train_data) * self.alpha))
         key_pairs = self.wm_gen.generate_watermark_set_with_clean_model(clean_model or self.net1)
         optimizer = KeyInputOptimizer(self.train_data, key_pairs, T_opt=20)
         key_pairs_optimized = optimizer.optimize()

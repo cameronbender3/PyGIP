@@ -10,7 +10,7 @@ from .models.attack.mea import (
 )
 from .models.defense import BaseDefense
 from .models.defense.WatermarkDefense import WatermarkByRandomGraph
-from .models.defense.OptimizedWatermarkDefense import OptimizedWatermarkDefense
+from .models.defense.SurviveWM2 import OptimizedWatermarkDefense
 from .models.nn import GCN, GraphSAGE, ShadowNet, AttackNet
 from .utils.metrics import GraphNeuralNetworkMetric
 
