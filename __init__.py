@@ -10,6 +10,7 @@ from .models.attack.mea import (
 )
 from .models.defense import BaseDefense
 from .models.defense.WatermarkDefense import WatermarkByRandomGraph
+from .models.defense.OptimizedWatermarkDefense import OptimizedWatermarkDefense
 from .models.nn import GCN, GraphSAGE, ShadowNet, AttackNet
 from .utils.metrics import GraphNeuralNetworkMetric
 
@@ -31,6 +32,7 @@ __all__ = [
 
     # Defense implementations
     'Watermark_sage',
+    'OptimizedWatermarkDefense',
 
     # Utility classes
     'GraphNeuralNetworkMetric',

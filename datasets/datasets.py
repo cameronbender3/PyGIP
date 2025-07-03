@@ -1,6 +1,7 @@
 import dgl
 import numpy as np
 import torch
+from sklearn.model_selection import StratifiedShuffleSplit
 from dgl.data import AmazonCoBuyComputerDataset  ### Computer
 from dgl.data import AmazonCoBuyPhotoDataset  ### Photo
 from dgl.data import FakeNewsDataset  ### Twitter
@@ -19,6 +20,7 @@ from torch_geometric.datasets import Planetoid  ### Cora, CiteSeer, PubMed
 from torch_geometric.datasets import PolBlogs  ### Polblogs
 from torch_geometric.datasets import Reddit  ### RedditData
 from torch_geometric.datasets import Yelp  ### YelpData
+from torch_geometric.datasets import TUDataset # ENZYMES
 
 
 def dgl_to_tg(dgl_graph):
@@ -144,7 +146,7 @@ class Cora(Dataset):
         # train_mask, test_mask, var_mask
         self.train_mask = data.train_mask
         self.test_mask = data.test_mask
-        self.var_mask = data.var_mask
+        self.var_mask = getattr(data, 'var_mask', None)
 
         self.node_number = data.num_nodes
         self.edge_index = data.edge_index
@@ -191,7 +193,8 @@ class Citeseer(Dataset):
 
         self.train_mask = data.train_mask
         self.test_mask = data.test_mask
-        self.var_mask = data.var_mask
+        self.var_mask = getattr(data, 'var_mask', None)
+
 
         self.node_number = data.num_nodes
         self.edge_index = data.edge_index
@@ -248,7 +251,8 @@ class DBLPdata(Dataset):
 
         self.train_mask = data.train_mask
         self.test_mask = data.test_mask
-        self.var_mask = data.var_mask
+        self.var_mask = getattr(data, 'var_mask', None)
+
 
         self.node_number = data.num_nodes
         self.edge_index = data.edge_index
@@ -295,7 +299,8 @@ class PubMed(Dataset):
 
         self.train_mask = data.train_mask
         self.test_mask = data.test_mask
-        self.var_mask = data.var_mask
+        self.var_mask = getattr(data, 'var_mask', None)
+
 
         self.node_number = data.num_nodes
         self.edge_index = data.edge_index
@@ -394,7 +399,8 @@ class FacebookData(Dataset):
 
         self.train_mask = data.train_mask
         self.test_mask = data.test_mask
-        self.var_mask = data.var_mask
+        self.var_mask = getattr(data, 'var_mask', None)
+
 
         self.node_number = data.num_nodes
         self.edge_index = data.edge_index
@@ -506,7 +512,8 @@ class PolblogsData(Dataset):
 
         self.train_mask = data.train_mask
         self.test_mask = data.test_mask
-        self.var_mask = data.var_mask
+        self.var_mask = getattr(data, 'var_mask', None)
+
 
         self.node_number = data.num_nodes
         self.edge_index = data.edge_index
@@ -570,7 +577,8 @@ class LastFMdata(Dataset):
 
         self.train_mask = data.train_mask
         self.test_mask = data.test_mask
-        self.var_mask = data.var_mask
+        self.var_mask = getattr(data, 'var_mask', None)
+
 
         self.node_number = data.num_nodes
         self.edge_index = data.edge_index
@@ -754,6 +762,29 @@ class NCI1(Dataset):
 
         self.generate_train_test_masks()
 
+
+####################################################################################################
+
+class ENZYMES(Dataset):
+    def __init__(self, api_type='torch_geometric', path='./downloads/'):
+        super().__init__(api_type, path)
+        if self.api_type == 'torch_geometric':
+            self.load_tg_data()
+        else:
+            raise ValueError("Only torch_geometric api_type is supported for ENZYMES.")
+
+    def load_tg_data(self):
+        dataset = TUDataset(root=self.path, name='ENZYMES')
+        data_list = [data for data in dataset]
+        all_x = torch.cat([d.x for d in data_list], dim=0)
+        mean, std = all_x.mean(0), all_x.std(0)
+        for d in data_list:
+            d.x = (d.x - mean) / (std + 1e-6)
+        all_labels = np.array([int(d.y) for d in data_list])
+        splitter = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+        train_idx, test_idx = next(splitter.split(np.zeros(len(all_labels)), all_labels))
+        self.train_data = [data_list[i] for i in train_idx]
+        self.test_data  = [data_list[i] for i in test_idx]
 
 ####################################################################################################
 

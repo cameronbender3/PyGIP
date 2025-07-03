@@ -8,10 +8,12 @@ from .attack.mea import (
     ModelExtractionAttack5
 )
 from .defense import BaseDefense
+from .defense.OptimizedWatermarkDefense import OptimizedWatermarkDefense
 
 __all__ = [
     'BaseAttack',
     'BaseDefense',
+    'OptimizedWatermarkDefense',
     'ModelExtractionAttack0',
     'ModelExtractionAttack1',
     'ModelExtractionAttack2',
